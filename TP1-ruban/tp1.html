@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>TP1</title>
+  <!-- voir https://greensock.com/docs/v3/Installation#installer -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+</head>
+<body>
+  <!-- dessin SVG créé et modifié par les scripts JS -->
+  <svg xmlns="http://www.w3.org/2000/svg"
+        width="100%" viewBox="0 0 200 200"
+        id="dessin">
+  </svg>
+
+  <!-- utilisation du mixin SVGelement -->
+  <script src="svgelement.js"></script>
+  <div style="margin: 10px;">
+    <button id="resetBtn">Reset</button>
+    <button id="anim1Btn">Animation 1</button>
+    <button id="anim2Btn">Animation 2</button>
+    <button id="anim3Btn">Animation 3</button>
+  </div>
+  <script>
+    // compléments à la librairie Math
+    Math.radians = (deg) => deg * Math.PI / 180
+    Math.degrees = (rad) => rad / Math.PI * 180
+    
+    class Led {
+    constructor(parent, x, y, radius) {
+        this.led = parent.appendElement("circle", {
+            cx: x,
+            cy: y,
+            r: radius - radius/16,
+            fill: "gray",
+            stroke: "black",
+            'stroke-width': radius/8
+        });
+
+        // 0 = éteinte, 1 = allumée
+        this._state = 0;
+    }
+
+    // propriété pour état progressif (Led3)
+    get state() {
+        return this._state;
+    }
+
+    set state(value) {
+        value = Math.max(0, Math.min(1, value));
+        this._state = value;
+        // couleur interpolée du gris vers le vert clair
+        const color = gsap.utils.interpolate("gray", "rgb(127, 255, 0)", value);
+        this.led.setAttribute("fill", color);
+    }
+
+    // allumage immédiat
+    turnOn(timeline, duration = 0.1, position = ">") {
+        timeline.to(this.led, {
+            duration: duration,
+            attr: { fill: "red" }
+        }, position);
+    }
+
+    // extinction immédiate
+    turnOff(timeline, duration = 0.1, position = ">") {
+        timeline.to(this.led, {
+            duration: duration,
+            attr: { fill: "gray" }
+        }, position);
+    }
+
+    // réinitialisation
+    reset() {
+        this.state = 0;
+        gsap.killTweensOf(this);
+    }
+}
+
+
+    // dessin SVG
+    const svg = SVGelement.fromSelector("#dessin")
+    // dessiner une led
+    const led = new Led(svg, 50, 50, 16)
+
+    /** Représente et dessine un ruban horizontal de leds dans un SVG */
+    class LedRibbon1 {
+        constructor(parent, number, x, y, radius, spacing=0) {
+            // liste des leds créées par ce ruban
+            this.leds = [];
+            for(let i =0; i < number; i++) {
+                this.leds.push(new Led(svg, x + (2 * radius + spacing) * i, y, radius));
+            }
+        }
+    }
+    // dessiner un ruban de leds
+    //const ribbon = new LedRibbon1(svg, 8, 8, 8, 4)
+
+    /** Représente et dessine un ruban horizontal de leds dans un SVG */
+    class LedRibbon2 {
+        constructor(parent, { number = 1, x = 0, y = 0, radius = 8, spacing = 0 } = {}) {
+            this.leds = [];
+
+            for (let i = 0; i < number; i++) {
+                this.leds.push(
+                    new Led(parent, x + (2 * radius + spacing) * i, y, radius)
+                );
+            }
+        }
+        reset() {
+            this.leds.forEach(led => led.reset());
+      }
+    }
+
+    const ribbon = new LedRibbon2(svg, { number: 16, x: 8, y: 8, radius: 6, spacing: 2 }); //Json
+    
+
+    // const TLled4 = gsap.timeline();
+    // TLled4.to(led4, { state: 1.0, duration: 1.0 });      // allumage progressif
+    // TLled4.to(led4, { state: 0.0, duration: 0.5 }, ">+2"); // extinction après 2 s
+
+    // boutons
+    document.getElementById("resetBtn").onclick = () => {
+      gsap.killTweensOf("*");
+      ribbon.reset();
+    };
+
+    document.getElementById("anim1Btn").onclick = () => {
+      // dessiner une led
+    const led = new Led(svg, 50, 50, 16)
+    // allumer la led puis l'éteindre, dans une timeline
+    const TLled = gsap.timeline()
+    led.turnOn(TLled, 1.0) // allumage en 1 seconde
+    led.turnOff(TLled, 0.5, ">+2") // extinction en 1/2 s après 2 secondes
+    };
+
+    document.getElementById("anim2Btn").onclick = () => {
+      const tl = gsap.timeline();
+      ribbon.leds.forEach(led => {
+        tl.to(led, { state: 1.0, duration: 0.5 });
+        tl.to(led, { state: 0.0, duration: 0.5 }, ">+0.5");
+      });
+    };
+
+    document.getElementById("anim3Btn").onclick = () => {
+      const tl = gsap.timeline();
+      ribbon.leds.forEach(led => {
+        led.turnOn(tl, 0.5);
+        led.turnOff(tl, 0.5, ">+0.5");
+        tl.to(led, { state: 1.0, duration: 0.5 });
+        tl.to(led, { state: 0.0, duration: 0.5 }, ">+0.5");
+      });
+    };
+    
+  </script>
+</body>
+</html>
